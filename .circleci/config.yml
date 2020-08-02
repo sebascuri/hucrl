@@ -1,0 +1,91 @@
+version: 2.1
+commands:
+  build:
+    steps:
+      - checkout
+
+      - run:
+          name: Install build dependencies
+          command: |
+            apt-get update
+            apt-get install -y --no-install-recommends --quiet build-essential libopenblas-dev python-opengl xvfb xauth
+
+      - restore_cache:
+          keys:
+            - pip3.7--{{ checksum ".circleci/config.yml" }}--{{ checksum "setup.py" }}
+            - pip3.7
+
+      - run:
+          name: Install library
+          command: |
+            pip install --progress-bar off numpy
+            pip install --progress-bar off -e .[test]
+
+
+      - save_cache:
+          key: pip3.7--{{ checksum ".circleci/config.yml" }}--{{ checksum "setup.py" }}
+          paths:
+            - ~/.cache/pip
+
+executors:
+  python37:
+    docker:
+      - image: python:3.7
+
+jobs:
+  build:
+    executor: python37
+    steps:
+      - build
+  test:
+    executor: python37
+    environment:
+      MODULE: hucrl
+      OPENBLAS_NUM_THREADS: 2
+      OMP_NUM_THREADS: 2
+      MKL_NUM_THREADS: 2
+    parallelism: 1  # change this with a payed plan.
+    steps:
+      - build
+
+      - run:
+          name: Run Style Tests
+          command: flake8 $MODULE --exclude '__init__.py' --show-source || { exit 1; }
+
+      - run:
+          name: Run Docstring Tests
+          command: pydocstyle $MODULE || { exit 1; }
+
+      - run:
+          name: Run Typing Tests
+          command: mypy $MODULE || { exit 1; }
+
+      - run:
+          name: Run Unit Tests
+          no_output_timeout: 30m
+          command: |
+            mkdir test-results
+            xvfb-run -a pytest $MODULE --junitxml=test-results/junit.xml
+
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+
+
+workflows:
+  version: 2
+  commit:
+    jobs:
+      - build
+      - test
+  weekly:
+    triggers:
+      - schedule:
+          cron: "0 0 * * 1"
+          filters:
+            branches:
+              only: master
+    jobs:
+      - build
+      - test
