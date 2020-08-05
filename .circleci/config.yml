@@ -49,6 +49,14 @@ jobs:
       - build
 
       - run:
+          name: Format code test
+          command: black -t py37 $MODULE || { exit 1; }
+
+      - run:
+          name: Format imports test
+          command: isort $MODULE || { exit 1; }
+
+      - run:
           name: Run Style Tests
           command: flake8 $MODULE --exclude '__init__.py' --show-source || { exit 1; }
 
@@ -58,7 +66,7 @@ jobs:
 
       - run:
           name: Run Typing Tests
-          command: mypy $MODULE || { exit 1; }
+          command: mypy --no-implicit-optional --ignore-missing-imports --disallow-incomplete-defs $MODULE || { exit 1; }
 
       - run:
           name: Run Unit Tests
