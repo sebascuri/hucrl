@@ -2,8 +2,9 @@
 
 import torch
 import torch.distributions
-from rllib.algorithms.abstract_algorithm import AbstractAlgorithm, MPOLoss
+from rllib.algorithms.abstract_algorithm import AbstractAlgorithm
 from rllib.algorithms.mpo import MPOWorker
+from rllib.dataset.datatypes import Loss
 from rllib.util.neural_networks import (
     deep_copy_module,
     freeze_parameters,
@@ -57,14 +58,13 @@ class MBMPO(AbstractAlgorithm):
         old_policy = deep_copy_module(policy)
         freeze_parameters(old_policy)
 
-        super().__init__()
+        super().__init__(policy=policy, critic=value_function, gamma=gamma)
         self.old_policy = old_policy
         self.dynamical_model = dynamical_model
         self.reward_model = reward_model
         self.policy = policy
         self.value_function = value_function
         self.value_target = deep_copy_module(value_function)
-        self.gamma = gamma
 
         self.mpo_loss = MPOWorker(epsilon, epsilon_mean, epsilon_var, regularization)
         self.value_loss = criterion(reduction="mean")
@@ -74,7 +74,7 @@ class MBMPO(AbstractAlgorithm):
         self.termination = termination
         self.dist_params = {}
 
-    def forward(self, states):
+    def forward(self, observation):
         """Compute the losses for one step of MPO.
 
         Note to future self: MPO uses the reversed mode-seeking KL-divergence.
@@ -85,7 +85,7 @@ class MBMPO(AbstractAlgorithm):
 
         Parameters
         ----------
-        states : torch.Tensor
+        observation : Observation
             The states at which to compute the losses.
 
         Returns
@@ -103,6 +103,7 @@ class MBMPO(AbstractAlgorithm):
         kl_var : torch.Tensor
             The average KL divergence of the variance.
         """
+        states = observation.state
         value_prediction = self.value_function(states)
 
         pi_dist = tensor_to_distribution(self.policy(states))
@@ -129,7 +130,7 @@ class MBMPO(AbstractAlgorithm):
         )
 
         # Since actions come from policy, value is the expected q-value
-        losses = self.mpo_loss(
+        mpo_loss = self.mpo_loss(
             q_values=q_values,
             action_log_probs=action_log_probs,
             kl_mean=kl_mean,
@@ -138,10 +139,6 @@ class MBMPO(AbstractAlgorithm):
 
         value_loss = self.value_loss(value_prediction, q_values.mean(dim=0))
         td_error = value_prediction - q_values.mean(dim=0)
-
-        dual_loss = losses.dual_loss.mean()
-        policy_loss = losses.primal_loss.mean()
-        combined_loss = value_loss + dual_loss + policy_loss
 
         self._info = {
             "kl_div": kl_mean + kl_var,
@@ -152,13 +149,7 @@ class MBMPO(AbstractAlgorithm):
             "eta_var": self.mpo_loss.eta_var(),
         }
 
-        return MPOLoss(
-            loss=combined_loss,
-            dual=dual_loss,
-            policy_loss=policy_loss,
-            critic_loss=value_loss,
-            td_error=td_error,
-        )
+        return mpo_loss + Loss(critic_loss=value_loss, td_error=td_error)
 
     def reset(self):
         """Reset the optimization (kl divergence) for the next epoch."""

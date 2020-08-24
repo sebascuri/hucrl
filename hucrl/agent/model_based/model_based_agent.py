@@ -6,19 +6,21 @@ A model based agent has three behaviors:
 - It plans with the model and policies (as guiding sampler).
 """
 import contextlib
+from dataclasses import asdict
 
 import gpytorch
 import torch
 from gym.utils import colorize
 from rllib.agent.abstract_agent import AbstractAgent
+from rllib.dataset.datatypes import Observation
 from rllib.dataset.experience_replay import (
     BootstrapExperienceReplay,
     StateExperienceReplay,
 )
-from rllib.dataset.utilities import average_named_tuple, stack_list_of_tuples
+from rllib.dataset.utilities import average_dataclass, stack_list_of_tuples
 from rllib.model import ExactGPModel, TransformedModel
 from rllib.util.gaussian_processes import SparseGP
-from rllib.util.neural_networks.utilities import disable_gradient
+from rllib.util.neural_networks.utilities import DisableGradient
 from rllib.util.rollout import rollout_model
 from rllib.util.training import train_model
 from rllib.util.utilities import tensor_to_distribution
@@ -407,7 +409,7 @@ class ModelBasedAgent(AbstractAgent):
         print(colorize("Optimizing Policy with Model Data", "yellow"))
         self.dynamical_model.eval()
         self.sim_dataset.reset()  # Erase simulation data set before starting.
-        with disable_gradient(self.dynamical_model), gpytorch.settings.fast_pred_var():
+        with DisableGradient(self.dynamical_model), gpytorch.settings.fast_pred_var():
             for i in tqdm(range(self.policy_opt_num_iter)):
                 # Step 1: Compute the state distribution
                 with torch.no_grad():
@@ -475,7 +477,10 @@ class ModelBasedAgent(AbstractAgent):
         # Iterate over state batches in the state distribution
         self.algorithm.reset()
         for _ in range(self.policy_opt_gradient_steps):
-            states = self.sim_dataset.get_batch(self.policy_opt_batch_size)
+            states = Observation(
+                state=self.sim_dataset.get_batch(self.policy_opt_batch_size),
+                action=None,
+            )
 
             def closure():
                 """Gradient calculation."""
@@ -487,12 +492,12 @@ class ModelBasedAgent(AbstractAgent):
             if self.train_steps % self.policy_update_frequency == 0:
                 cm = contextlib.nullcontext()
             else:
-                cm = disable_gradient(self.plan_policy)
+                cm = DisableGradient(self.plan_policy)
 
             with cm:
                 losses = self.optimizer.step(closure=closure)
 
-            self.logger.update(**average_named_tuple(losses)._asdict())
+            self.logger.update(**asdict(average_dataclass(losses)))
             self.logger.update(**self.algorithm.info())
 
             self.counters["train_steps"] += 1
