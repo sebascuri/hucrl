@@ -67,10 +67,10 @@ class TestDerivedPolicy(object):
             base_dim += self.dim_action[0]
 
         base_policy = NNPolicy(
-            self.dim_state,
-            (base_dim,),
-            self.num_states,
-            self.num_actions,
+            dim_state=self.dim_state,
+            dim_action=(base_dim,),
+            num_states=self.num_states,
+            num_actions=self.num_actions,
             layers=[32, 32],
             deterministic=deterministic,
             goal=goal,

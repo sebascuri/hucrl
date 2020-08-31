@@ -8,7 +8,6 @@ from rllib.algorithms.mpc import CEMShooting, MPPIShooting, RandomShooting
 from rllib.dataset.experience_replay import ExperienceReplay
 from rllib.environment import GymEnvironment
 from rllib.model.environment_model import EnvironmentModel
-from rllib.policy.mpc_policy import MPCPolicy
 from rllib.reward.environment_reward import EnvironmentReward
 from rllib.util.training import evaluate_agent
 
@@ -122,9 +121,8 @@ def test_mpc_solvers(solver, num_cpu):
     if num_cpu > 1 and "CI" in os.environ:
         return
     mpc_solver = get_solver(solver, True, num_cpu, "mean")
-    policy = MPCPolicy(mpc_solver)
 
-    agent = MPCAgent(mpc_policy=policy)
+    agent = MPCAgent(mpc_solver=mpc_solver)
     evaluate_agent(
         agent, environment=env, num_episodes=1, max_steps=MAX_ITER, render=False
     )
@@ -132,9 +130,8 @@ def test_mpc_solvers(solver, num_cpu):
 
 def test_mpc_warm_start(solver, warm_start):
     mpc_solver = get_solver(solver, warm_start, 1, "mean")
-    policy = MPCPolicy(mpc_solver)
 
-    agent = MPCAgent(mpc_policy=policy)
+    agent = MPCAgent(mpc_solver=mpc_solver)
     evaluate_agent(
         agent, environment=env, num_episodes=1, max_steps=MAX_ITER, render=False
     )
@@ -142,9 +139,8 @@ def test_mpc_warm_start(solver, warm_start):
 
 def test_mpc_default_action(solver, default_action):
     mpc_solver = get_solver(solver, True, 1, default_action)
-    policy = MPCPolicy(mpc_solver)
 
-    agent = MPCAgent(mpc_policy=policy)
+    agent = MPCAgent(mpc_solver=mpc_solver)
     evaluate_agent(
         agent, environment=env, num_episodes=1, max_steps=MAX_ITER, render=False
     )
