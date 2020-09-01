@@ -7,7 +7,7 @@ import torch.nn as nn
 from rllib.dataset.transforms import ActionScaler, DeltaState, MeanFunction
 from rllib.environment import GymEnvironment
 
-from exps.util import get_mb_mpo_agent, get_mpc_agent
+from exps.util import LargeStateTermination, get_mb_mpo_agent, get_mpc_agent
 from hucrl.reward.mujoco_rewards import HalfCheetahReward
 
 
@@ -31,18 +31,6 @@ class StateTransform(nn.Module):
         angle = torch.atan2(sin, cos)
         states_ = torch.cat((states[..., :2], angle, states[..., 16:]), dim=-1)
         return states_
-
-
-def large_state_termination(state, action, next_state=None):
-    """Termination condition for environment."""
-    if not isinstance(state, torch.Tensor):
-        state = torch.tensor(state)
-    if not isinstance(action, torch.Tensor):
-        action = torch.tensor(action)
-
-    return torch.any(torch.abs(state[..., 1:]) > 2000, dim=-1) | torch.any(
-        torch.abs(action) > 25 * 4, dim=-1
-    )
 
 
 def get_agent_and_environment(params, agent_name):
@@ -79,7 +67,9 @@ def get_agent_and_environment(params, agent_name):
             action_scale=action_scale,
             transformations=transformations,
             input_transform=input_transform,
-            termination=large_state_termination,
+            termination_model=LargeStateTermination(
+                max_action=environment.action_scale.max() * 15
+            ),
             initial_distribution=exploratory_distribution,
         )
     elif agent_name == "mbmpo":
@@ -91,7 +81,9 @@ def get_agent_and_environment(params, agent_name):
             input_transform=input_transform,
             action_scale=action_scale,
             transformations=transformations,
-            termination=large_state_termination,
+            termination_model=LargeStateTermination(
+                max_action=environment.action_scale.max() * 15
+            ),
             initial_distribution=exploratory_distribution,
         )
     else:

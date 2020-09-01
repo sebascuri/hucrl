@@ -67,7 +67,9 @@ def get_agent_and_environment(params, agent_name):
             action_scale=action_scale,
             transformations=transformations,
             input_transform=input_transform,
-            termination_model=LargeStateTermination(),
+            termination_model=LargeStateTermination(
+                max_action=environment.action_scale.max() * 15
+            ),
             initial_distribution=exploratory_distribution,
         )
     elif agent_name == "mbmpo":
@@ -79,7 +81,9 @@ def get_agent_and_environment(params, agent_name):
             input_transform=input_transform,
             action_scale=action_scale,
             transformations=transformations,
-            termination_model=LargeStateTermination(),
+            termination_model=LargeStateTermination(
+                max_action=environment.action_scale.max() * 15
+            ),
             initial_distribution=exploratory_distribution,
         )
     else:

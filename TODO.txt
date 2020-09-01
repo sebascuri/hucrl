@@ -1,1 +1,1 @@
-Add model tests.
+Add fast tests for the different experiments.

@@ -394,8 +394,10 @@ def get_mpc_agent(
 class LargeStateTermination(AbstractModel):
     """Large state termination."""
 
-    def __init__(self):
+    def __init__(self, max_state=200, max_action=15):
         super().__init__(model_kind="termination", dim_state=(), dim_action=())
+        self.max_state = max_state
+        self.max_action = max_action
 
     def forward(self, state, action, next_state=None):
         """Terminate environment."""
@@ -404,8 +406,8 @@ class LargeStateTermination(AbstractModel):
         if not isinstance(action, torch.Tensor):
             action = torch.tensor(action)
 
-        done = torch.any(torch.abs(state) > 200, dim=-1) | torch.any(
-            torch.abs(action) > 15, dim=-1
+        done = torch.any(torch.abs(state) > self.max_state, dim=-1) | torch.any(
+            torch.abs(action) > self.max_action, dim=-1
         )
 
         return (

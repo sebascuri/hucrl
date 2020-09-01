@@ -36,7 +36,7 @@ class MujocoReward(AbstractModel, metaclass=ABCMeta):
         self.reward_state = reward_state
         reward = self.reward_state + self.reward_ctrl
         try:
-            return reward.unsqueeze(-1), torch.zeros(1)
+            return reward.float().unsqueeze(-1), torch.zeros(1)
         except AttributeError:
             return reward, torch.zeros(1)
 

@@ -13,7 +13,7 @@ from rllib.dataset.transforms import (
 )
 from rllib.environment import GymEnvironment
 
-from exps.util import get_mb_mpo_agent, get_mpc_agent
+from exps.util import LargeStateTermination, get_mb_mpo_agent, get_mpc_agent
 from hucrl.reward.mujoco_rewards import ReacherReward
 
 
@@ -34,16 +34,16 @@ class QuaternionTransform(nn.Module):
         return torch.cat((angles, other), dim=-1)
 
 
-def large_state_termination(state, action, next_state=None):
-    """Termination condition for environment."""
-    if not isinstance(state, torch.Tensor):
-        state = torch.tensor(state)
-    if not isinstance(action, torch.Tensor):
-        action = torch.tensor(action)
-
-    return torch.any(torch.abs(state) > 1e2, dim=-1) | torch.any(
-        torch.abs(action) > 25, dim=-1
-    )
+# def large_state_termination(state, action, next_state=None):
+#     """Termination condition for environment."""
+#     if not isinstance(state, torch.Tensor):
+#         state = torch.tensor(state)
+#     if not isinstance(action, torch.Tensor):
+#         action = torch.tensor(action)
+#
+#     return torch.any(torch.abs(state) > 1e2, dim=-1) | torch.any(
+#         torch.abs(action) > 25, dim=-1
+#     )
 
 
 def get_agent_and_environment(params, agent_name):
@@ -76,9 +76,9 @@ def get_agent_and_environment(params, agent_name):
             -1e2,
             -1e2,
             -1e2,
-            -0.4,
-            -0.1,
-            -0.4,
+            # -0.4,
+            # -0.1,
+            # -0.4,
         ]
     )
 
@@ -98,9 +98,9 @@ def get_agent_and_environment(params, agent_name):
             1e2,
             1e2,
             1e2,
-            0.4,
-            0.6,
-            0.4,
+            # 0.4,
+            # 0.6,
+            # 0.4,
         ]
     )
 
@@ -108,7 +108,7 @@ def get_agent_and_environment(params, agent_name):
         ActionScaler(scale=action_scale),
         AngleWrapper(indexes=[0, 1, 2, 3, 4, 5, 6]),
         MeanFunction(DeltaState()),  #
-        NextStateClamper(low, high, constant_idx=[14, 15, 16]),
+        NextStateClamper(low, high),  # , constant_idx=[14, 15, 16]),
     ]
 
     input_transform = QuaternionTransform()
@@ -130,9 +130,9 @@ def get_agent_and_environment(params, agent_name):
                 -0.005,
                 -0.005,
                 -0.005,  # qvel
-                -0.3,
-                -0.1,
-                -0.3,  # goal
+                # -0.3,
+                # -0.1,
+                # -0.3,  # goal
             ]
         ),
         torch.tensor(
@@ -151,35 +151,40 @@ def get_agent_and_environment(params, agent_name):
                 0.005,
                 0.005,
                 0.005,  # qvel
-                0.3,
-                0.6,
-                0.3,  # goal
+                # 0.3,
+                # 0.6,
+                # 0.3,  # goal
             ]
         ),
     )
 
     if agent_name == "mpc":
         agent = get_mpc_agent(
-            (environment.dim_state[0] + 3,),
+            environment.dim_state,
+            # (environment.dim_state[0] + 3,),
             environment.dim_action,
             params,
             reward_model,
             action_scale=action_scale,
             transformations=transformations,
             input_transform=input_transform,
-            termination=large_state_termination,
+            termination_model=LargeStateTermination(
+                max_action=environment.action_scale.max() * 15
+            ),
             initial_distribution=exploratory_distribution,
         )
     elif agent_name == "mbmpo":
         agent = get_mb_mpo_agent(
-            (environment.dim_state[0] + 3,),
+            environment.dim_state,  # (environment.dim_state[0] + 3,),
             environment.dim_action,
             params=params,
             reward_model=reward_model,
             input_transform=input_transform,
             action_scale=action_scale,
             transformations=transformations,
-            termination=large_state_termination,
+            termination_model=LargeStateTermination(
+                max_action=environment.action_scale.max() * 15
+            ),
             initial_distribution=exploratory_distribution,
         )
     else:

@@ -13,7 +13,7 @@ from rllib.dataset.transforms import (
 )
 from rllib.environment import GymEnvironment
 
-from exps.util import get_mb_mpo_agent, get_mpc_agent
+from exps.util import LargeStateTermination, get_mb_mpo_agent, get_mpc_agent
 from hucrl.reward.mujoco_rewards import ReacherReward
 
 
@@ -32,18 +32,6 @@ class QuaternionTransform(nn.Module):
         cos, sin, other = states[..., :7], states[..., 7:14], states[..., 14:]
         angles = torch.atan2(sin, cos)
         return torch.cat((angles, other), dim=-1)
-
-
-def large_state_termination(state, action, next_state=None):
-    """Termination condition for environment."""
-    if not isinstance(state, torch.Tensor):
-        state = torch.tensor(state)
-    if not isinstance(action, torch.Tensor):
-        action = torch.tensor(action)
-
-    return torch.any(torch.abs(state) > 1e2, dim=-1) | torch.any(
-        torch.abs(action) > 25, dim=-1
-    )
 
 
 def get_agent_and_environment(params, agent_name):
@@ -100,26 +88,30 @@ def get_agent_and_environment(params, agent_name):
 
     if agent_name == "mpc":
         agent = get_mpc_agent(
-            (environment.dim_state[0] + 3,),
+            environment.dim_state,  # (environment.dim_state[0] + 3,),
             environment.dim_action,
             params,
             reward_model,
             action_scale=action_scale,
             transformations=transformations,
             input_transform=input_transform,
-            termination=large_state_termination,
+            termination_model=LargeStateTermination(
+                max_action=environment.action_scale.max() * 15
+            ),
             initial_distribution=exploratory_distribution,
         )
     elif agent_name == "mbmpo":
         agent = get_mb_mpo_agent(
-            (environment.dim_state[0] + 3,),
+            environment.dim_state,  # (environment.dim_state[0] + 3,),
             environment.dim_action,
             params=params,
             reward_model=reward_model,
             input_transform=input_transform,
             action_scale=action_scale,
             transformations=transformations,
-            termination=large_state_termination,
+            termination_model=LargeStateTermination(
+                max_action=environment.action_scale.max() * 15
+            ),
             initial_distribution=exploratory_distribution,
         )
 
