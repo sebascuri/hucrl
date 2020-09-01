@@ -2,11 +2,10 @@ from abc import ABCMeta
 from typing import Any, Optional
 
 from rllib.dataset.datatypes import TupleDistribution
-from rllib.reward import AbstractReward
+from rllib.model import AbstractModel
 from torch import Tensor
 
-class MujocoReward(AbstractReward, metaclass=ABCMeta):
-    dim_action: int
+class MujocoReward(AbstractModel, metaclass=ABCMeta):
     action_scale: float
     action_cost: float
     sparse: bool

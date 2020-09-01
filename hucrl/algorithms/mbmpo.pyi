@@ -1,11 +1,10 @@
 from typing import Any, NamedTuple, Optional, Tuple, Union
 
 import torch.nn as nn
-from rllib.algorithms.abstract_algorithm import AbstractAlgorithm, MPOLoss
-from rllib.dataset.datatypes import Observation, Termination
+from rllib.algorithms.abstract_algorithm import AbstractAlgorithm, Loss
+from rllib.dataset.datatypes import Observation
 from rllib.model import AbstractModel
 from rllib.policy import AbstractPolicy
-from rllib.reward import AbstractReward
 from rllib.util.parameter_decay import ParameterDecay
 from rllib.util.utilities import RewardTransformer
 from rllib.value_function import AbstractQFunction, AbstractValueFunction
@@ -64,11 +63,11 @@ class MPO(AbstractAlgorithm):
         self, reward: Tensor, next_state: Tensor, done: Tensor
     ) -> Tensor: ...
     def reset(self) -> None: ...
-    def forward(self, observation: Observation, **kwargs: Any) -> MPOLoss: ...
+    def forward(self, observation: Observation, **kwargs: Any) -> Loss: ...
 
 class MBMPO(AbstractAlgorithm):
     dynamical_model: AbstractModel
-    reward_model: AbstractReward
+    reward_model: AbstractModel
     policy: AbstractPolicy
     value_function: AbstractValueFunction
     value_function_target: AbstractValueFunction
@@ -80,12 +79,12 @@ class MBMPO(AbstractAlgorithm):
     num_action_samples: int
     entropy_reg: float
     reward_transformer: RewardTransformer
-    termination: Optional[Termination]
+    termination_model: Optional[AbstractModel]
     dist_params: dict
     def __init__(
         self,
         dynamical_model: AbstractModel,
-        reward_model: AbstractReward,
+        reward_model: AbstractModel,
         policy: AbstractPolicy,
         value_function: AbstractValueFunction,
         criterion: _Loss,
@@ -96,7 +95,7 @@ class MBMPO(AbstractAlgorithm):
         gamma: float = ...,
         num_action_samples: int = ...,
         reward_transformer: RewardTransformer = ...,
-        termination: Optional[Termination] = ...,
+        termination_model: Optional[AbstractModel] = ...,
     ) -> None: ...
     def reset(self) -> None: ...
-    def forward(self, *args: Tensor, **kwargs: Any) -> MPOLoss: ...
+    def forward(self, *args: Tensor, **kwargs: Any) -> Loss: ...

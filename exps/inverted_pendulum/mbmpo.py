@@ -26,7 +26,7 @@ parser.set_defaults(
     model_kind="ProbabilisticEnsemble",
     model_learn_num_iter=50,
     model_opt_lr=1e-3,
-    seed=0,
+    seed=1,
 )
 
 args = parser.parse_args()

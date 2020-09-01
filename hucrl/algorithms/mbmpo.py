@@ -53,7 +53,7 @@ class MBMPO(AbstractAlgorithm):
         gamma=0.99,
         num_action_samples=15,
         reward_transformer=RewardTransformer(),
-        termination=None,
+        termination_model=None,
     ):
         old_policy = deep_copy_module(policy)
         freeze_parameters(old_policy)
@@ -71,7 +71,7 @@ class MBMPO(AbstractAlgorithm):
 
         self.num_action_samples = num_action_samples
         self.reward_transformer = reward_transformer
-        self.termination = termination
+        self.termination_model = termination_model
         self.dist_params = {}
 
     def forward(self, observation):
@@ -121,7 +121,7 @@ class MBMPO(AbstractAlgorithm):
                 value_function=self.value_target,
                 num_samples=self.num_action_samples,
                 reward_transformer=self.reward_transformer,
-                termination=self.termination,
+                termination_model=self.termination_model,
                 **self.dist_params,
             )
         q_values = value_estimate

@@ -8,6 +8,7 @@ import torch.jit
 import torch.nn as nn
 import torch.optim as optim
 from rllib.algorithms.mpc import CEMShooting, MPPIShooting, RandomShooting
+from rllib.model import AbstractModel
 from rllib.model.ensemble_model import EnsembleModel
 from rllib.model.gp_model import ExactGPModel, RandomFeatureGPModel, SparseGPModel
 from rllib.model.nn_model import NNModel
@@ -18,7 +19,7 @@ from rllib.util.training import evaluate_agent, train_agent
 from rllib.value_function import NNQFunction, NNValueFunction
 
 from hucrl.agent import MBMPOAgent, MPCAgent
-from hucrl.model.optimistic_model import OptimisticModel
+from hucrl.model.hallucinated_model import HallucinatedModel
 
 
 def _get_model(
@@ -59,8 +60,8 @@ def _get_model(
         )
     elif params.model_kind in ["ProbabilisticEnsemble", "DeterministicEnsemble"]:
         model = EnsembleModel(
-            dim_state,
-            dim_action,
+            dim_state=dim_state,
+            dim_action=dim_action,
             num_heads=params.model_num_heads,
             layers=params.model_layers,
             biased_head=not params.model_unbiased_head,
@@ -70,8 +71,8 @@ def _get_model(
         )
     elif params.model_kind in ["ProbabilisticNN", "DeterministicNN"]:
         model = NNModel(
-            dim_state,
-            dim_action,
+            dim_state=dim_state,
+            dim_action=dim_action,
             biased_head=not params.model_unbiased_head,
             non_linearity=params.model_non_linearity,
             input_transform=input_transform,
@@ -90,7 +91,7 @@ def _get_model(
     params.update({"model": model.__class__.__name__})
 
     if params.exploration == "optimistic":
-        dynamical_model = OptimisticModel(model, transformations, beta=params.beta)
+        dynamical_model = HallucinatedModel(model, transformations, beta=params.beta)
     else:
         dynamical_model = TransformedModel(model, transformations)
 
@@ -103,12 +104,12 @@ def _get_mpc_policy(
     params,
     action_scale,
     terminal_reward=None,
-    termination=None,
+    termination_model=None,
 ):
     if params.mpc_solver == "cem":
         solver = CEMShooting(
-            dynamical_model,
-            reward_model,
+            dynamical_model=dynamical_model,
+            reward_model=reward_model,
             horizon=params.mpc_horizon,
             gamma=params.gamma,
             scale=1 / 8,
@@ -118,15 +119,15 @@ def _get_mpc_policy(
             num_elites=params.mpc_num_elites,
             alpha=params.mpc_alpha,
             terminal_reward=terminal_reward,
-            termination=termination,
+            termination_model=termination_model,
             warm_start=not params.mpc_not_warm_start,
             default_action=params.mpc_default_action,
             num_cpu=1,
         )
     elif params.mpc_solver == "random":
         solver = RandomShooting(
-            dynamical_model,
-            reward_model,
+            dynamical_model=dynamical_model,
+            reward_model=reward_model,
             horizon=params.mpc_horizon,
             gamma=params.gamma,
             action_scale=action_scale,
@@ -134,7 +135,7 @@ def _get_mpc_policy(
             num_samples=params.mpc_num_samples,
             num_elites=params.mpc_num_elites,
             terminal_reward=terminal_reward,
-            termination=termination,
+            termination_model=termination_model,
             warm_start=not params.mpc_not_warm_start,
             default_action=params.mpc_default_action,
             num_cpu=1,
@@ -142,8 +143,8 @@ def _get_mpc_policy(
 
     elif params.mpc_solver == "mppi":
         solver = MPPIShooting(
-            dynamical_model,
-            reward_model,
+            dynamical_model=dynamical_model,
+            reward_model=reward_model,
             horizon=params.mpc_horizon,
             gamma=params.gamma,
             action_scale=action_scale,
@@ -151,7 +152,7 @@ def _get_mpc_policy(
             num_iter=params.mpc_num_iter,
             num_samples=params.mpc_num_samples,
             terminal_reward=terminal_reward,
-            termination=termination,
+            termination_model=termination_model,
             warm_start=not params.mpc_not_warm_start,
             default_action=params.mpc_default_action,
             kappa=params.mpc_kappa,
@@ -228,7 +229,7 @@ def get_mb_mpo_agent(
     transformations,
     action_scale,
     input_transform=None,
-    termination=None,
+    termination_model=None,
     initial_distribution=None,
 ):
     """Get a MB-MPO agent."""
@@ -288,7 +289,7 @@ def get_mb_mpo_agent(
         model_learn_batch_size=params.model_learn_batch_size,
         bootstrap=not params.not_bootstrap,
         optimizer=optimizer,
-        termination=termination,
+        termination_model=termination_model,
         plan_horizon=params.plan_horizon,
         plan_samples=params.plan_samples,
         plan_elites=params.plan_elites,
@@ -327,7 +328,7 @@ def get_mpc_agent(
     transformations,
     action_scale,
     input_transform=None,
-    termination=None,
+    termination_model=None,
     initial_distribution=None,
 ):
     """Get an MPC based agent."""
@@ -346,12 +347,6 @@ def get_mpc_agent(
     # Define Value function.
     value_function = _get_value_function(dim_state, params, input_transform)
 
-    value_optimizer = optim.Adam(
-        value_function.parameters(),
-        lr=params.value_opt_lr,
-        weight_decay=params.value_opt_weight_decay,
-    )
-
     if params.mpc_terminal_reward:
         terminal_reward = value_function
     else:
@@ -364,7 +359,7 @@ def get_mpc_agent(
         params,
         action_scale=action_scale,
         terminal_reward=terminal_reward,
-        termination=termination,
+        termination_model=termination_model,
     )
 
     # Define Agent
@@ -377,11 +372,11 @@ def get_mpc_agent(
         model_learn_num_iter=params.model_learn_num_iter,
         model_learn_batch_size=params.model_learn_batch_size,
         bootstrap=not params.not_bootstrap,
-        value_optimizer=value_optimizer,
-        value_opt_num_iter=params.value_opt_num_iter,
-        value_opt_batch_size=params.value_opt_batch_size,
-        value_gradient_steps=params.value_gradient_steps,
-        value_num_steps_returns=params.value_num_steps_returns,
+        # value_optimizer=value_optimizer,
+        # value_opt_num_iter=params.value_opt_num_iter,
+        # value_opt_batch_size=params.value_opt_batch_size,
+        # value_gradient_steps=params.value_gradient_steps,
+        # value_num_steps_returns=params.value_num_steps_returns,
         sim_num_steps=params.sim_num_steps,
         sim_initial_states_num_trajectories=params.sim_initial_states_num_trajectories,
         sim_initial_dist_num_trajectories=params.sim_initial_dist_num_trajectories,
@@ -396,16 +391,28 @@ def get_mpc_agent(
     return agent
 
 
-def large_state_termination(state, action, next_state=None):
-    """Termination condition for environment."""
-    if not isinstance(state, torch.Tensor):
-        state = torch.tensor(state)
-    if not isinstance(action, torch.Tensor):
-        action = torch.tensor(action)
+class LargeStateTermination(AbstractModel):
+    """Large state termination."""
 
-    return torch.any(torch.abs(state) > 200, dim=-1) | torch.any(
-        torch.abs(action) > 15, dim=-1
-    )
+    def __init__(self):
+        super().__init__(model_kind="termination", dim_state=(), dim_action=())
+
+    def forward(self, state, action, next_state=None):
+        """Terminate environment."""
+        if not isinstance(state, torch.Tensor):
+            state = torch.tensor(state)
+        if not isinstance(action, torch.Tensor):
+            action = torch.tensor(action)
+
+        done = torch.any(torch.abs(state) > 200, dim=-1) | torch.any(
+            torch.abs(action) > 15, dim=-1
+        )
+
+        return (
+            torch.zeros(*done.shape, 2)
+            .scatter_(dim=-1, index=(~done).long().unsqueeze(-1), value=-float("inf"))
+            .squeeze(-1)
+        )
 
 
 def train_and_evaluate(

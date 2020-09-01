@@ -26,7 +26,7 @@ class MBMPOAgent(ModelBasedAgent):
         reward_model,
         optimizer,
         mpo_value_learning_criterion,
-        termination=None,
+        termination_model=None,
         initial_distribution=None,
         plan_horizon=1,
         plan_samples=8,
@@ -72,7 +72,7 @@ class MBMPOAgent(ModelBasedAgent):
             regularization=mpo_regularization,
             num_action_samples=mpo_num_action_samples,
             gamma=gamma,
-            termination=termination,
+            termination_model=termination_model,
         )
         optimizer = type(optimizer)(
             [
@@ -88,7 +88,7 @@ class MBMPOAgent(ModelBasedAgent):
             dynamical_model=dynamical_model,
             reward_model=reward_model,
             model_optimizer=model_optimizer,
-            termination=termination,
+            termination_model=termination_model,
             value_function=self.algorithm.value_function,
             plan_horizon=plan_horizon,
             plan_samples=plan_samples,
@@ -184,7 +184,7 @@ class MBMPOAgent(ModelBasedAgent):
             reward_model,
             optimizer,
             mpo_value_learning_criterion=loss.MSELoss,
-            termination=None,
+            termination_model=None,
             initial_distribution=None,
             plan_horizon=1,
             plan_samples=8,

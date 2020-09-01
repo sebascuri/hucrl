@@ -38,7 +38,7 @@ class MPCAgent(ModelBasedAgent):
             reward_model=mpc_policy.solver.reward_model,
             policy=mpc_policy,
             value_function=mpc_policy.solver.terminal_reward,
-            termination=mpc_policy.solver.termination,
+            termination_model=mpc_policy.solver.termination_model,
             model_optimizer=model_optimizer,
             plan_horizon=0,  # Calling the mpc policy already plans.
             plan_samples=0,
@@ -99,7 +99,7 @@ class MPCAgent(ModelBasedAgent):
             num_iter=2 if test else 5,
             num_samples=20 if test else 400,
             num_elites=5 if test else 40,
-            termination=None,
+            termination_model=None,
             terminal_reward=None,
             warm_start=True,
             default_action="zero",

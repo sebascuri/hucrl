@@ -86,7 +86,7 @@ def test_reward(environment, action_cost, action_type):
         )
 
         np.testing.assert_allclose(
-            np.tile(reward, (5,)),
+            np.tile(reward, (5, 1)),
             reward_model(
                 state.repeat(5, 1), action.repeat(5, 1), next_state.repeat(5, 1)
             )[0],
@@ -142,7 +142,7 @@ def test_tolerance(action_cost):
         )
 
         np.testing.assert_allclose(
-            np.tile(reward, (5,)),
+            np.tile(reward, (5, 1)),
             reward_model(
                 state.repeat(5, 1), action.repeat(5, 1), next_state.repeat(5, 1)
             )[0],

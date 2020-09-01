@@ -13,7 +13,6 @@ from rllib.environment.system_environment import SystemEnvironment
 from rllib.environment.systems import InvertedPendulum
 from rllib.model.abstract_model import AbstractModel
 from rllib.policy import NNPolicy
-from rllib.reward.abstract_reward import AbstractReward
 from rllib.reward.utilities import tolerance
 from rllib.util.neural_networks.utilities import freeze_parameters
 from rllib.util.rollout import rollout_model, rollout_policy
@@ -59,16 +58,21 @@ def large_state_termination(state, action, next_state=None):
     if not isinstance(action, torch.Tensor):
         action = torch.tensor(action)
 
-    return torch.any(torch.abs(state) > 200, dim=-1) | torch.any(
+    done = torch.any(torch.abs(state) > 200, dim=-1) | torch.any(
         torch.abs(action) > 200, dim=-1
+    )
+    return (
+        torch.zeros(*done.shape, 2)
+        .scatter_(dim=-1, index=(~done).long().unsqueeze(-1), value=-float("inf"))
+        .squeeze(-1)
     )
 
 
-class PendulumReward(AbstractReward):
+class PendulumReward(AbstractModel):
     """Reward for Inverted Pendulum."""
 
     def __init__(self, action_cost=0):
-        super().__init__()
+        super().__init__(dim_state=(2,), dim_action=(1,), model_kind="rewards")
         self.action_cost = action_cost
         self.reward_offset = 0
 
@@ -91,7 +95,7 @@ class PendulumReward(AbstractReward):
 
         cost = state_cost + action_cost
 
-        return cost, torch.zeros(1)
+        return cost.unsqueeze(-1), torch.zeros(1)
 
 
 class PendulumModel(AbstractModel):
@@ -434,7 +438,7 @@ def get_agent_and_environment(params, agent_name):
         InvertedPendulum(mass=0.3, length=0.5, friction=0.005, step_size=1 / 80),
         reward=reward_model,
         initial_state=initial_distribution.sample,
-        termination=large_state_termination,
+        termination_model=large_state_termination,
     )
 
     action_scale = environment.action_scale
@@ -459,7 +463,7 @@ def get_agent_and_environment(params, agent_name):
             action_scale=action_scale,
             transformations=transformations,
             input_transform=input_transform,
-            termination=large_state_termination,
+            termination_model=large_state_termination,
             initial_distribution=exploratory_distribution,
         )
     elif agent_name == "mbmpo":
@@ -471,7 +475,7 @@ def get_agent_and_environment(params, agent_name):
             input_transform=input_transform,
             action_scale=action_scale,
             transformations=transformations,
-            termination=large_state_termination,
+            termination_model=large_state_termination,
             initial_distribution=exploratory_distribution,
         )
 

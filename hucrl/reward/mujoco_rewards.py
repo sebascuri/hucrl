@@ -4,15 +4,17 @@ from abc import ABCMeta
 
 import numpy as np
 import torch
-from rllib.reward import AbstractReward
+from rllib.model import AbstractModel
 from rllib.util.utilities import get_backend
 
 
-class MujocoReward(AbstractReward, metaclass=ABCMeta):
+class MujocoReward(AbstractModel, metaclass=ABCMeta):
     """Base class for mujoco rewards."""
 
     def __init__(self, action_cost=0.01, sparse=False, goal=None):
-        super().__init__(goal=goal)
+        super().__init__(
+            goal=goal, dim_state=(), dim_action=(self.dim_action,), model_kind="rewards"
+        )
         self.action_scale = 1
         self.action_cost = action_cost
         self.sparse = sparse
@@ -21,7 +23,7 @@ class MujocoReward(AbstractReward, metaclass=ABCMeta):
 
     def action_reward(self, action):
         """Get action reward."""
-        action = action[..., : self.dim_action]  # get only true dimensions.
+        action = action[..., : self.dim_action[0]]  # get only true dimensions.
         bk = get_backend(action)
         if self.sparse:
             return bk.exp(-bk.square(action / self.action_scale).sum(-1)) - 1
@@ -33,7 +35,10 @@ class MujocoReward(AbstractReward, metaclass=ABCMeta):
         self.reward_ctrl = self.action_cost * reward_control
         self.reward_state = reward_state
         reward = self.reward_state + self.reward_ctrl
-        return reward, torch.zeros(1)
+        try:
+            return reward.unsqueeze(-1), torch.zeros(1)
+        except AttributeError:
+            return reward, torch.zeros(1)
 
 
 class CartPoleReward(MujocoReward):

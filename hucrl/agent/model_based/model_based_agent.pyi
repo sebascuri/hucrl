@@ -2,13 +2,12 @@ from typing import Optional
 
 from rllib.agent.abstract_agent import AbstractAgent
 from rllib.algorithms.abstract_algorithm import AbstractAlgorithm
-from rllib.dataset.datatypes import Observation, Termination
+from rllib.dataset.datatypes import Observation
 from rllib.dataset.experience_replay import ExperienceReplay, StateExperienceReplay
 from rllib.model import AbstractModel
-from rllib.model.derived_model import TransformedModel
+from rllib.model.transformed_model import TransformedModel
 from rllib.policy import AbstractPolicy
 from rllib.policy.derived_policy import DerivedPolicy
-from rllib.reward import AbstractReward
 from rllib.value_function import AbstractValueFunction
 from torch import Tensor
 from torch.distributions import Distribution
@@ -16,8 +15,8 @@ from torch.optim.optimizer import Optimizer
 
 class ModelBasedAgent(AbstractAgent):
     dynamical_model: TransformedModel
-    reward_model: AbstractReward
-    termination: Optional[Termination]
+    reward_model: AbstractModel
+    termination_model: Optional[AbstractModel]
     value_function: AbstractValueFunction
 
     model_optimizer: Optimizer
@@ -53,11 +52,11 @@ class ModelBasedAgent(AbstractAgent):
     def __init__(
         self,
         dynamical_model: AbstractModel,
-        reward_model: AbstractReward,
+        reward_model: AbstractModel,
         policy: AbstractPolicy,
         model_optimizer: Optional[Optimizer] = ...,
         value_function: Optional[AbstractValueFunction] = ...,
-        termination: Optional[Termination] = ...,
+        termination_model: Optional[AbstractModel] = ...,
         plan_horizon: int = ...,
         plan_samples: int = ...,
         plan_elites: int = ...,

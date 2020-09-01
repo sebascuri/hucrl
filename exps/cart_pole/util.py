@@ -7,7 +7,7 @@ import torch.nn as nn
 from rllib.dataset.transforms import ActionScaler, DeltaState, MeanFunction
 from rllib.environment import GymEnvironment
 
-from exps.util import get_mb_mpo_agent, get_mpc_agent, large_state_termination
+from exps.util import LargeStateTermination, get_mb_mpo_agent, get_mpc_agent
 from hucrl.reward.mujoco_rewards import CartPoleReward
 
 
@@ -60,26 +60,26 @@ def get_agent_and_environment(params, agent_name):
 
     if agent_name == "mpc":
         agent = get_mpc_agent(
-            environment.dim_state,
-            environment.dim_action,
-            params,
-            reward_model,
+            dim_state=environment.dim_state,
+            dim_action=environment.dim_action,
+            params=params,
+            reward_model=reward_model,
             action_scale=action_scale,
             transformations=transformations,
             input_transform=input_transform,
-            termination=large_state_termination,
+            termination_model=LargeStateTermination(),
             initial_distribution=exploratory_distribution,
         )
     elif agent_name == "mbmpo":
         agent = get_mb_mpo_agent(
-            environment.dim_state,
-            environment.dim_action,
-            params,
-            reward_model,
+            dim_state=environment.dim_state,
+            dim_action=environment.dim_action,
+            params=params,
+            reward_model=reward_model,
             input_transform=input_transform,
             action_scale=action_scale,
             transformations=transformations,
-            termination=large_state_termination,
+            termination_model=LargeStateTermination(),
             initial_distribution=exploratory_distribution,
         )
     else:

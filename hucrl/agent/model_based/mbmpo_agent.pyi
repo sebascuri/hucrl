@@ -1,16 +1,15 @@
 """Model-Based MPO Agent."""
 from typing import Optional, Type, Union
 
-from rllib.algorithms.mpo import MBMPO
-from rllib.dataset.datatypes import Termination
 from rllib.model import AbstractModel
 from rllib.policy import AbstractPolicy
-from rllib.reward import AbstractReward
 from rllib.util.parameter_decay import ParameterDecay
 from rllib.value_function import AbstractValueFunction
 from torch.distributions import Distribution
 from torch.nn.modules.loss import _Loss
 from torch.optim.optimizer import Optimizer
+
+from hucrl.algorithms.mbmpo import MBMPO
 
 from .model_based_agent import ModelBasedAgent
 
@@ -22,9 +21,9 @@ class MBMPOAgent(ModelBasedAgent):
         policy: AbstractPolicy,
         value_function: AbstractValueFunction,
         dynamical_model: AbstractModel,
-        reward_model: AbstractReward,
+        reward_model: AbstractModel,
         optimizer: Optimizer,
-        termination: Optional[Termination] = ...,
+        termination_model: Optional[AbstractModel] = ...,
         initial_distribution: Optional[Distribution] = ...,
         plan_horizon: int = ...,
         plan_samples: int = ...,

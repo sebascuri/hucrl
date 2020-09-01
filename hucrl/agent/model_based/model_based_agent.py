@@ -46,8 +46,8 @@ class ModelBasedAgent(AbstractAgent):
         Fixed or learnable policy.
     value_function: AbstractValueFunction, optional. (default: None).
         Fixed or learnable value function used for planning.
-    termination: Callable, optional. (default: None).
-        Fixed or learnable termination condition.
+    termination_model: Callable, optional. (default: None).
+        Fixed or learnable termination_model condition.
 
     plan_horizon: int, optional. (default: 0).
         If plan_horizon = 0: the agent returns a sample from the current policy when
@@ -102,7 +102,7 @@ class ModelBasedAgent(AbstractAgent):
         model_optimizer,
         policy,
         value_function=None,
-        termination=None,
+        termination_model=None,
         plan_horizon=0,
         plan_samples=1,
         plan_elites=1,
@@ -145,7 +145,7 @@ class ModelBasedAgent(AbstractAgent):
             dynamical_model = TransformedModel(dynamical_model, [])
         self.dynamical_model = dynamical_model
         self.reward_model = reward_model
-        self.termination = termination
+        self.termination_model = termination_model
         self.model_optimizer = model_optimizer
         self.value_function = value_function
 
@@ -317,7 +317,7 @@ class ModelBasedAgent(AbstractAgent):
             num_samples=self.plan_samples,
             value_function=self.value_function,
             reward_transformer=self.algorithm.reward_transformer,
-            termination=self.termination,
+            termination_model=self.termination_model,
         )
         actions = stack_list_of_tuples(trajectory).action
         idx = torch.topk(value, k=self.plan_elites, largest=True)[1]
@@ -436,7 +436,7 @@ class ModelBasedAgent(AbstractAgent):
             - The empirical state distribution.
         """
         # Samples from empirical initial state distribution.
-        initial_states = self.initial_states.get_batch(
+        initial_states = self.initial_states.sample_batch(
             self.sim_initial_states_num_trajectories
         )
 
@@ -464,7 +464,7 @@ class ModelBasedAgent(AbstractAgent):
             action_scale=self.plan_policy.action_scale,
             initial_state=initial_states,
             max_steps=self.sim_num_steps,
-            termination=self.termination,
+            termination_model=self.termination_model,
             **self.dist_params,
         )
 
@@ -477,16 +477,15 @@ class ModelBasedAgent(AbstractAgent):
         # Iterate over state batches in the state distribution
         self.algorithm.reset()
         for _ in range(self.policy_opt_gradient_steps):
-            states = Observation(
-                state=self.sim_dataset.get_batch(self.policy_opt_batch_size),
-                action=None,
-            )
 
             def closure():
                 """Gradient calculation."""
+                states = Observation(
+                    state=self.sim_dataset.sample_batch(self.policy_opt_batch_size)
+                )
                 self.optimizer.zero_grad()
                 losses = self.algorithm(states)
-                losses.loss.backward()
+                losses.combined_loss.backward()
                 return losses
 
             if self.train_steps % self.policy_update_frequency == 0:
