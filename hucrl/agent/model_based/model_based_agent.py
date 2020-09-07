@@ -25,7 +25,6 @@ from rllib.util.rollout import rollout_model
 from rllib.util.training.model_learning import train_model
 from rllib.util.utilities import tensor_to_distribution
 from rllib.util.value_estimation import mb_return
-from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from hucrl.policy.derived_policy import DerivedPolicy
@@ -239,7 +238,9 @@ class ModelBasedAgent(AbstractAgent):
         else:
             if not isinstance(state, torch.Tensor):
                 state = torch.tensor(state, dtype=torch.get_default_dtype())
-            policy = tensor_to_distribution(self.policy(state), **self.dist_params)
+            policy = tensor_to_distribution(
+                self.policy(state), **self.policy.dist_params
+            )
             self.pi = policy
             action = self.plan(state).detach().numpy()
 
@@ -354,15 +355,14 @@ class ModelBasedAgent(AbstractAgent):
         if self.model_learn_num_iter > 0:
             print(colorize("Training Model", "yellow"))
 
-            loader = DataLoader(
-                self.dataset, batch_size=self.model_learn_batch_size, shuffle=True
-            )
             train_model(
                 self.dynamical_model.base_model,
-                train_loader=loader,
+                train_set=self.dataset,
                 max_iter=self.model_learn_num_iter,
                 optimizer=self.model_optimizer,
                 logger=self.logger,
+                batch_size=self.model_learn_batch_size,
+                epsilon=-1.0,
             )
 
     def _log_simulated_trajectory(self):
@@ -456,16 +456,14 @@ class ModelBasedAgent(AbstractAgent):
             initial_states = torch.cat((initial_states, initial_states_), dim=0)
 
         initial_states = initial_states.unsqueeze(0)
-        self.plan_policy.reset()  # TODO: Add goal distribution.
+        self.plan_policy.reset()
         trajectory = rollout_model(
             dynamical_model=self.dynamical_model,
             reward_model=self.reward_model,
             policy=self.plan_policy,
-            action_scale=self.plan_policy.action_scale,
             initial_state=initial_states,
             max_steps=self.sim_num_steps,
             termination_model=self.termination_model,
-            **self.dist_params,
         )
 
         self.sim_trajectory = stack_list_of_tuples(trajectory)

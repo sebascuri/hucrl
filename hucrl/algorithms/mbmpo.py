@@ -125,16 +125,11 @@ class MBMPO(AbstractAlgorithm):
                 **self.dist_params,
             )
         q_values = value_estimate
-        action_log_probs = pi_dist.log_prob(
-            trajectory[0].action / self.policy.action_scale
-        )
+        action_log_p = pi_dist.log_prob(trajectory[0].action / self.policy.action_scale)
 
         # Since actions come from policy, value is the expected q-value
         mpo_loss = self.mpo_loss(
-            q_values=q_values,
-            action_log_probs=action_log_probs,
-            kl_mean=kl_mean,
-            kl_var=kl_var,
+            q_values=q_values, action_log_p=action_log_p, kl_mean=kl_mean, kl_var=kl_var
         )
 
         value_loss = self.value_loss(value_prediction, q_values.mean(dim=0))

@@ -15,7 +15,7 @@ from rllib.model.nn_model import NNModel
 from rllib.model.transformed_model import TransformedModel
 from rllib.policy import MPCPolicy, NNPolicy
 from rllib.util.neural_networks import init_head_weight, zero_bias
-from rllib.util.training import evaluate_agent, train_agent
+from rllib.util.training.agent_training import evaluate_agent, train_agent
 from rllib.value_function import NNQFunction, NNValueFunction
 
 from hucrl.agent import MBMPOAgent, MPCAgent
@@ -432,6 +432,7 @@ def train_and_evaluate(
             num_episodes=params.train_episodes,
             max_steps=params.environment_max_steps,
             plot_flag=params.plot_train_results,
+            plot_frequency=1,
             print_frequency=params.print_frequency,
             save_milestones=save_milestones,
             render=params.render_train,
