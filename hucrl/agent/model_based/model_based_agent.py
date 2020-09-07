@@ -22,7 +22,7 @@ from rllib.model import ExactGPModel, TransformedModel
 from rllib.util.gaussian_processes import SparseGP
 from rllib.util.neural_networks.utilities import DisableGradient
 from rllib.util.rollout import rollout_model
-from rllib.util.training import train_model
+from rllib.util.training.model_learning import train_model
 from rllib.util.utilities import tensor_to_distribution
 from rllib.util.value_estimation import mb_return
 from torch.utils.data import DataLoader
