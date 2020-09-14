@@ -3,14 +3,9 @@
 import torch
 import torch.distributions
 from rllib.algorithms.abstract_algorithm import AbstractAlgorithm
-from rllib.algorithms.mpo import MPOWorker
+from rllib.algorithms.mpo import MPOLoss
 from rllib.dataset.datatypes import Loss
-from rllib.util.neural_networks import (
-    deep_copy_module,
-    freeze_parameters,
-    update_parameters,
-)
-from rllib.util.utilities import RewardTransformer, separated_kl, tensor_to_distribution
+from rllib.util.utilities import RewardTransformer
 from rllib.util.value_estimation import mb_return
 
 
@@ -55,104 +50,59 @@ class MBMPO(AbstractAlgorithm):
         reward_transformer=RewardTransformer(),
         termination_model=None,
     ):
-        old_policy = deep_copy_module(policy)
-        freeze_parameters(old_policy)
-
-        super().__init__(policy=policy, critic=value_function, gamma=gamma)
-        self.old_policy = old_policy
+        super().__init__(
+            policy=policy,
+            criterion=criterion(reduction="mean"),
+            critic=value_function,
+            epsilon_mean=epsilon_mean,
+            epsilon_var=epsilon_var,
+            regularization=regularization,
+            num_samples=num_action_samples,
+            reward_transformer=reward_transformer,
+            gamma=gamma,
+        )
         self.dynamical_model = dynamical_model
         self.reward_model = reward_model
-        self.policy = policy
-        self.value_function = value_function
-        self.value_target = deep_copy_module(value_function)
-
-        self.mpo_loss = MPOWorker(epsilon, epsilon_mean, epsilon_var, regularization)
-        self.value_loss = criterion(reduction="mean")
-
-        self.num_action_samples = num_action_samples
-        self.reward_transformer = reward_transformer
         self.termination_model = termination_model
-        self.dist_params = {}
+        self.mpo_loss = MPOLoss(epsilon, regularization)
 
-    def forward(self, observation):
+    def critic_loss(self, observation):
+        """Return 0 loss. The actor loss returns both the critic and the actor."""
+        return Loss()
+
+    def actor_loss(self, observation):
         """Compute the losses for one step of MPO.
-
-        Note to future self: MPO uses the reversed mode-seeking KL-divergence.
-        Don't change the next direction of the KL divergence.
-
-        TRPO/PPO use the forward mean-seeking KL-divergence.
-        kl_mean, kl_var = separated_kl(p=pi_dist_old, q=pi_dist)
 
         Parameters
         ----------
         observation : Observation
             The states at which to compute the losses.
-
-        Returns
-        -------
-        loss : torch.Tensor
-            The combined loss
-        value_loss : torch.Tensor
-            The loss of the value function approximation.
-        policy_loss : torch.Tensor
-            The kl-regularized fitting loss for the policy.
-        eta_loss : torch.Tensor
-            The loss for the lagrange multipliers.
-        kl_mean : torch.Tensor
-            The average KL divergence of the mean.
-        kl_var : torch.Tensor
-            The average KL divergence of the variance.
         """
-        states = observation.state
-        value_prediction = self.value_function(states)
-
-        pi_dist = tensor_to_distribution(self.policy(states))
-        pi_dist_old = tensor_to_distribution(self.old_policy(states))
-        kl_mean, kl_var = separated_kl(p=pi_dist_old, q=pi_dist)
+        state = observation.state
+        value_prediction = self.critic(state)
 
         with torch.no_grad():
-            value_estimate, trajectory = mb_return(
-                state=states,
+            value_estimate, obs = mb_return(
+                state=state,
                 dynamical_model=self.dynamical_model,
                 policy=self.old_policy,
                 reward_model=self.reward_model,
                 num_steps=1,
                 gamma=self.gamma,
-                value_function=self.value_target,
-                num_samples=self.num_action_samples,
+                value_function=self.critic_target,
+                num_samples=self.num_samples,
                 reward_transformer=self.reward_transformer,
                 termination_model=self.termination_model,
-                **self.dist_params,
+                reduction="min",
             )
         q_values = value_estimate
-        action_log_p = pi_dist.log_prob(trajectory[0].action / self.policy.action_scale)
+        log_p, _, _, _, _ = self.get_log_p_kl_entropy(obs.state, obs.action)
 
         # Since actions come from policy, value is the expected q-value
-        mpo_loss = self.mpo_loss(
-            q_values=q_values, action_log_p=action_log_p, kl_mean=kl_mean, kl_var=kl_var
-        )
-
-        value_loss = self.value_loss(value_prediction, q_values.mean(dim=0))
+        mpo_loss = self.mpo_loss(q_values=q_values, action_log_p=log_p.squeeze(-1))
+        value_loss = self.criterion(value_prediction, q_values.mean(dim=0))
         td_error = value_prediction - q_values.mean(dim=0)
 
-        self._info = {
-            "kl_div": kl_mean + kl_var,
-            "kl_mean": kl_mean,
-            "kl_var": kl_var,
-            "eta": self.mpo_loss.eta(),
-            "eta_mean": self.mpo_loss.eta_mean(),
-            "eta_var": self.mpo_loss.eta_var(),
-        }
-
-        return mpo_loss + Loss(critic_loss=value_loss, td_error=td_error)
-
-    def reset(self):
-        """Reset the optimization (kl divergence) for the next epoch."""
-        # Copy over old policy for KL divergence
-        self.old_policy.load_state_dict(self.policy.state_dict())
-
-    def update(self):
-        """Update target value function."""
-        update_parameters(
-            self.value_target, self.value_function, tau=self.value_function.tau
-        )
+        critic_loss = Loss(critic_loss=value_loss, td_error=td_error)
+        self._info.update(eta=self.mpo_loss.eta())
+        return mpo_loss.reduce(self.criterion.reduction) + critic_loss

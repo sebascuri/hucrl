@@ -225,7 +225,8 @@ class ModelBasedAgent(AbstractAgent):
                 ]
             },
         }
-        self.logger.writer.add_custom_scalars(layout)
+        if self.logger.writer is not None:
+            self.logger.writer.add_custom_scalars(layout)
 
     def act(self, state):
         """Ask the agent for an action to interact with the environment.
@@ -277,7 +278,7 @@ class ModelBasedAgent(AbstractAgent):
 
         Then train the agent.
         """
-        if self._training:
+        if self.training:
             if isinstance(self.dynamical_model.base_model, ExactGPModel):
                 observation = stack_list_of_tuples(self.last_trajectory)
                 for transform in self.dataset.transformations:

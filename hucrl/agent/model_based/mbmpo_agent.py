@@ -89,7 +89,7 @@ class MBMPOAgent(ModelBasedAgent):
             reward_model=reward_model,
             model_optimizer=model_optimizer,
             termination_model=termination_model,
-            value_function=self.algorithm.value_function,
+            value_function=self.algorithm.critic_target,
             plan_horizon=plan_horizon,
             plan_samples=plan_samples,
             plan_elites=plan_elites,
