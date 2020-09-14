@@ -57,7 +57,7 @@ df = pd.DataFrame(
     ],
 )
 
-shutil.rmtree(agent.logger.writer.logdir)
+shutil.rmtree(agent.logger.log_dir)
 
 for run in os.listdir(path):
     if "0.2" in run:

@@ -36,7 +36,7 @@ args = parser.parse_args()
 params = DotMap(vars(args))
 
 environment, agent = get_agent_and_environment(params, "mpc")
-shutil.rmtree(agent.logger.writer.logdir)
+shutil.rmtree(agent.logger.log_dir)
 
 for penalty in [0.1, 0.01, 0.05]:
     path = "runs/MPCAgent/"

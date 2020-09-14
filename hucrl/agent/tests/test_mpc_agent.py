@@ -7,7 +7,7 @@ from rllib.algorithms.mpc import CEMShooting, MPPIShooting, RandomShooting
 from rllib.dataset.experience_replay import ExperienceReplay
 from rllib.environment import GymEnvironment
 from rllib.model.environment_model import EnvironmentModel
-from rllib.util.training import evaluate_agent
+from rllib.util.training.agent_training import evaluate_agent
 
 SEED = 0
 MAX_ITER = 5
