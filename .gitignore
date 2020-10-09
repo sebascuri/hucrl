@@ -18,6 +18,9 @@ __pycache__/
 # Scratch Files
 _scratch/
 
+# Source
+src/
+
 # Distribution / packaging
 .Python
 build/

@@ -96,7 +96,8 @@ class MBMPO(AbstractAlgorithm):
                 reduction="min",
             )
         q_values = value_estimate
-        log_p, _, _, _, _ = self.get_log_p_kl_entropy(obs.state, obs.action)
+        log_p, _ = self.get_log_p_and_ope_weight(obs.state, obs.action)
+        # log_p, _, _, _, _ = self.get_log_p_kl_entropy(obs.state, obs.action)
 
         # Since actions come from policy, value is the expected q-value
         mpo_loss = self.mpo_loss(q_values=q_values, action_log_p=log_p.squeeze(-1))
@@ -104,5 +105,5 @@ class MBMPO(AbstractAlgorithm):
         td_error = value_prediction - q_values.mean(dim=0)
 
         critic_loss = Loss(critic_loss=value_loss, td_error=td_error)
-        self._info.update(eta=self.mpo_loss.eta())
+        self._info.update(eta=self.mpo_loss.eta)
         return mpo_loss.reduce(self.criterion.reduction) + critic_loss

@@ -432,11 +432,11 @@ def train_and_evaluate(
             num_episodes=params.train_episodes,
             max_steps=params.environment_max_steps,
             plot_flag=params.plot_train_results,
-            plot_frequency=1,
+            callback_frequency=1,
             print_frequency=params.print_frequency,
             save_milestones=save_milestones,
             render=params.render_train,
-            plot_callbacks=plot_callbacks,
+            callbacks=plot_callbacks,
         )
     agent.logger.export_to_json()  # Save statistics.
 

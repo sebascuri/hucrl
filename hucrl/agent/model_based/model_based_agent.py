@@ -27,8 +27,6 @@ from rllib.util.utilities import tensor_to_distribution
 from rllib.util.value_estimation import mb_return
 from tqdm import tqdm
 
-from hucrl.policy.derived_policy import DerivedPolicy
-
 
 class ModelBasedAgent(AbstractAgent):
     """Implementation of a Model Based RL Agent.
@@ -151,8 +149,8 @@ class ModelBasedAgent(AbstractAgent):
         self.model_learn_num_iter = model_learn_num_iter
         self.model_learn_batch_size = model_learn_batch_size
 
-        self.plan_policy = policy
-        self.policy = DerivedPolicy(policy, self.dynamical_model.base_model.dim_action)
+        self.policy = policy
+        # self.policy = DerivedPolicy(policy,self.dynamical_model.base_model.dim_action)
 
         self.plan_horizon = plan_horizon
         self.plan_samples = plan_samples
@@ -245,7 +243,7 @@ class ModelBasedAgent(AbstractAgent):
             self.pi = policy
             action = self.plan(state).detach().numpy()
 
-        action = action[..., : self.dynamical_model.base_model.dim_action[0]]
+        # action = action[..., : self.dynamical_model.base_model.dim_action[0]]
         return action.clip(
             -self.policy.action_scale.numpy(), self.policy.action_scale.numpy()
         )
@@ -313,7 +311,7 @@ class ModelBasedAgent(AbstractAgent):
             state,
             dynamical_model=self.dynamical_model,
             reward_model=self.reward_model,
-            policy=self.plan_policy,
+            policy=self.policy,
             num_steps=self.plan_horizon,
             gamma=self.gamma,
             num_samples=self.plan_samples,
@@ -457,11 +455,11 @@ class ModelBasedAgent(AbstractAgent):
             initial_states = torch.cat((initial_states, initial_states_), dim=0)
 
         initial_states = initial_states.unsqueeze(0)
-        self.plan_policy.reset()
+        self.policy.reset()
         trajectory = rollout_model(
             dynamical_model=self.dynamical_model,
             reward_model=self.reward_model,
-            policy=self.plan_policy,
+            policy=self.policy,
             initial_state=initial_states,
             max_steps=self.sim_num_steps,
             termination_model=self.termination_model,
@@ -490,7 +488,7 @@ class ModelBasedAgent(AbstractAgent):
             if self.train_steps % self.policy_update_frequency == 0:
                 cm = contextlib.nullcontext()
             else:
-                cm = DisableGradient(self.plan_policy)
+                cm = DisableGradient(self.policy)
 
             with cm:
                 losses = self.optimizer.step(closure=closure)

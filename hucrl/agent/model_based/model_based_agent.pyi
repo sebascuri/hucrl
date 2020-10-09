@@ -7,7 +7,6 @@ from rllib.dataset.experience_replay import ExperienceReplay, StateExperienceRep
 from rllib.model import AbstractModel
 from rllib.model.transformed_model import TransformedModel
 from rllib.policy import AbstractPolicy
-from rllib.policy.derived_policy import DerivedPolicy
 from rllib.value_function import AbstractValueFunction
 from torch import Tensor
 from torch.distributions import Distribution
@@ -31,8 +30,7 @@ class ModelBasedAgent(AbstractAgent):
     plan_elites: int
 
     algorithm: AbstractAlgorithm
-    policy: DerivedPolicy
-    plan_policy: AbstractPolicy
+    policy: AbstractPolicy
     policy_opt_num_iter: int
     policy_opt_batch_size: int
     policy_opt_gradient_steps: int

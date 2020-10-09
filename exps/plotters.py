@@ -62,7 +62,7 @@ def set_figure_params(serif=False, fontsize=9):
     rcParams.update(params)
 
 
-def plot_last_trajectory(agent, episode: int):
+def plot_last_trajectory(agent, environment, episode: int):
     """Plot agent last trajectory."""
     model = agent.dynamical_model.base_model
     real_trajectory = stack_list_of_tuples(agent.last_trajectory)
@@ -96,7 +96,7 @@ def plot_last_trajectory(agent, episode: int):
     plt.close()
 
 
-def plot_last_sim_and_real_trajectory(agent, episode: int):
+def plot_last_sim_and_real_trajectory(agent, environment, episode: int):
     """Plot agent last simulated and real trajectory."""
     model = agent.dynamical_model.base_model
     real_trajectory = stack_list_of_tuples(agent.last_trajectory)
@@ -142,7 +142,7 @@ def plot_last_sim_and_real_trajectory(agent, episode: int):
     plt.close()
 
 
-def plot_last_rewards(agent, episode: int):
+def plot_last_rewards(agent, environment, episode: int):
     """Plot agent last rewards."""
     real_trajectory = stack_list_of_tuples(agent.last_trajectory)
 

@@ -28,6 +28,7 @@ from exps.inverted_pendulum.plotters import (
 )
 from exps.util import get_mb_mpo_agent, get_mpc_agent
 from hucrl.algorithms.mbmpo import MBMPO
+from hucrl.environment.hallucination_wrapper import HallucinationWrapper
 
 
 class StateTransform(nn.Module):
@@ -482,4 +483,10 @@ def get_agent_and_environment(params, agent_name):
     else:
         raise NotImplementedError
 
+    # %% Add Hallucination Wrapper.
+    if params.exploration == "optimistic":
+        try:
+            environment.add_wrapper(HallucinationWrapper)
+        except AttributeError:
+            environment = HallucinationWrapper(environment)
     return environment, agent
