@@ -283,7 +283,11 @@ class ModelBasedAgent(AbstractAgent):
                     observation = transform(observation)
                 print(colorize("Add data to GP Model", "yellow"))
                 self.dynamical_model.base_model.add_data(
-                    observation.state, observation.action, observation.next_state
+                    observation.state,
+                    observation.action[
+                        ..., : self.dynamical_model.base_model.dim_action[0]
+                    ],
+                    observation.next_state,
                 )
 
                 print(colorize("Summarize GP Model", "yellow"))
@@ -319,10 +323,9 @@ class ModelBasedAgent(AbstractAgent):
             reward_transformer=self.algorithm.reward_transformer,
             termination_model=self.termination_model,
         )
-        actions = stack_list_of_tuples(trajectory).action
         idx = torch.topk(value, k=self.plan_elites, largest=True)[1]
         # Return first action and the mean over the elite samples.
-        return actions[0, idx].mean(0)
+        return trajectory.action[idx, 0].mean(0)
 
     def learn(self):
         """Train the agent.
