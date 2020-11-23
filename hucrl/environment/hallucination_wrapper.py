@@ -10,6 +10,7 @@ class HallucinationWrapper(Wrapper):
     """A hallucination environment wrapper."""
 
     def __init__(self, env: Env, hallucinate_rewards: bool = False) -> None:
+        env.reward_range = float("-inf"), float("+inf")
         super().__init__(env=env)
         if hallucinate_rewards:
             self.hall_shape = (self.env.observation_space.shape[0] + 1,)

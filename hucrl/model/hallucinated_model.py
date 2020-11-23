@@ -1,5 +1,11 @@
 """Implementation of an Optimistic Model."""
 import torch
+from rllib.dataset.transforms import (
+    DeltaState,
+    MeanFunction,
+    NextStateNormalizer,
+    StateNormalizer,
+)
 from rllib.model.transformed_model import TransformedModel
 
 
@@ -36,6 +42,9 @@ class HallucinatedModel(TransformedModel):
         if torch.all(tril == 0.0):
             return mean
 
+        if optimism_vars.shape[-1] == 0:
+            return mean, tril
+
         return (
             mean + self.beta * (tril @ optimism_vars.unsqueeze(-1)).squeeze(-1),
             torch.zeros_like(tril),
@@ -47,3 +56,35 @@ class HallucinatedModel(TransformedModel):
         scale = super().scale(state, control_action)
 
         return scale
+
+    @classmethod
+    def default(
+        cls,
+        environment,
+        base_model=None,
+        model_kind="dynamics",
+        transformations=None,
+        *args,
+        **kwargs,
+    ):
+        """Initialize hallucinated model by default."""
+        if transformations is None:
+            # hallucinated_scale = np.concatenate(
+            #         (environment.action_scale, np.ones(environment.dim_state))
+            # )
+            transformations = [
+                MeanFunction(DeltaState()),
+                StateNormalizer(),
+                # ActionScaler(scale=hallucinated_scale),
+                # RewardNormalizer(),
+                NextStateNormalizer(),
+            ]
+
+        return super().default(
+            environment=environment,
+            base_model=base_model,
+            model_kind=model_kind,
+            transformations=transformations,
+            *args,
+            **kwargs,
+        )

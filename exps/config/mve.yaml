@@ -1,0 +1,6 @@
+# Config file for (H)-MVE algorithm.
+num_steps: 1
+num_samples: 2
+base_agent: SAC
+model_learn_exploration_episodes: 5
+exploration_episodes: 10

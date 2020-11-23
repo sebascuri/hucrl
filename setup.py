@@ -16,7 +16,7 @@ extras = {
     "experiments": [
         "lsf_runner==0.0.5",
         "torchvision>=0.6.0",
-        "Pillow==5.4.1",
+        "Pillow>=5.4.1",
         "pandas==0.25.0",
         "dotmap>=1.3.0,<1.4.0",
     ],
@@ -43,6 +43,7 @@ setup(
         "matplotlib>=3.1.0",
         "gpytorch>=1.1.1,<1.2.0",
         "tensorboardX>=2.0,<3",
+        "pyyaml>=5.0.0,<6",
     ],
     extras_require=extras,
     classifiers=[
