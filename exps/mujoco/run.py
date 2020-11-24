@@ -66,7 +66,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--exploration",
         type=str,
-        default="expected",
+        default="optimistic",
         choices=["optimistic", "expected", "thompson"],
     )
     parser.add_argument("--config-file", type=str, default="config/bptt.yaml")

@@ -1,0 +1,6 @@
+# Config file for (H)-DA algorithm.
+horizon: 50
+num_samples: 500
+mpc_solver_name: MPPIShooting
+model_learn_exploration_episodes: 5
+exploration_episodes: 5
