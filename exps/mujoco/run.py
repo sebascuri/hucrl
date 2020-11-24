@@ -1,8 +1,8 @@
 """Script that demonstrates how to use BPTT using hallucination."""
 
 import argparse
+import importlib
 
-from rllib.agent import MVEAgent
 from rllib.environment import GymEnvironment
 from rllib.model import TransformedModel
 from rllib.util import set_random_seed
@@ -27,12 +27,14 @@ def main(args):
         dynamical_model = TransformedModel.default(environment)
     kwargs = parse_config_file(args.config_file)
 
-    agent = MVEAgent.default(
+    agent = getattr(
+        importlib.import_module("rllib.agent"), f"{args.agent}Agent"
+    ).default(
         environment=environment,
         dynamical_model=dynamical_model,
         reward_model=reward_model,
         thompson_sampling=args.exploration == "thompson",
-        **kwargs
+        **kwargs,
     )
     train_agent(
         agent=agent,
@@ -52,14 +54,21 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Parameters for BPTT.")
+    parser = argparse.ArgumentParser(description="Parameters for H-UCRL.")
+    parser.add_argument(
+        "--agent",
+        type=str,
+        default="BPTT",
+        choices=["BPTT", "MVE", "DataAugmentation", "MPC", "MBMPO"],
+    )
+    parser.add_argument("--environment", type=str, default="MBHalfCheetah-v0")
+
     parser.add_argument(
         "--exploration",
         type=str,
         default="expected",
         choices=["optimistic", "expected", "thompson"],
     )
-    parser.add_argument("--environment", type=str, default="MBHalfCheetah-v0")
     parser.add_argument("--config-file", type=str, default="config/bptt.yaml")
 
     parser.add_argument("--seed", type=int, default=0)
