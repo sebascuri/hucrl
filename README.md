@@ -5,7 +5,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License](https://img.shields.io/github/license/mashape/apistatus.svg)](https://pypi.org/project/hug/)
 
-This repo is an implementation of the H-UCRL algorithm introduced in
+This repository is an implementation of the H-UCRL algorithm introduced in
 Curi, S., Berkenkamp, F., & Krause, A. (2020). Efficient Model-Based Reinforcement Learning through Optimistic Policy Search and Planning.
 
 
@@ -27,23 +27,27 @@ $ pip install -e .[mujoco]
 
 
 ## Running an experiment.
+For the inverted pendulum experiment run
 ```bash
-$ python exps/ENVIRONMENT/mbmpo.py
+$ python exps/inverted_pendulum/run.py
 ```
 
-For example, for the inverted pendulum experiment run
+For the mujoco (license required) experiment run
 ```bash
-$ python exps/inverted_pendulum/mbmpo.py
+$ python exps/mujoco/run.py --environment ENV_NAME --agent AGENT_NAME --action
 ```
 
-## Pre Commit
-install pre-commit with
-```bash
-$ pip install pre-commit
-$ pre-commit install
-```
+We support MBHalfCheetah-v0, MBPusher-v0, MBReacher-v0, MBAnt-v0, MBCartPole-v0, MBHopper-v0,
+MBInvertedDoublePendulum-v0, MBInvertedPendulum-v0, MBReacher-v0, MBReacher3D-v0, MBSwimmer-v0, MBWalker2d-v0
 
-Run pre-commit with
-```bash
-$ pre-commit run --all-files
+## Citing H-UCRL
+If you this repo for your research please use the following BibTeX entry:
+```text
+@article{curi2020efficient,
+  title={Efficient model-based reinforcement learning through optimistic policy search and planning},
+  author={Curi, Sebastian and Berkenkamp, Felix and Krause, Andreas},
+  journal={Advances in Neural Information Processing Systems},
+  volume={33},
+  year={2020}
+}
 ```
