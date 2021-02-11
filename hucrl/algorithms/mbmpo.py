@@ -6,7 +6,7 @@ from rllib.algorithms.abstract_algorithm import AbstractAlgorithm
 from rllib.algorithms.mpo import MPOLoss
 from rllib.dataset.datatypes import Loss
 from rllib.util.utilities import RewardTransformer
-from rllib.util.value_estimation import mb_return
+from hucrl.utilities import mb_return
 
 
 class MBMPO(AbstractAlgorithm):
