@@ -1,8 +1,6 @@
 """Utilities to estimate value functions."""
 from collections import namedtuple
 
-import torch
-
 from rllib.dataset.utilities import stack_list_of_tuples
 from rllib.util.neural_networks.utilities import repeat_along_dimension
 from rllib.util.rollout import rollout_model
