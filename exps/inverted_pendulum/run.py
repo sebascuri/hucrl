@@ -14,7 +14,7 @@ from exps.inverted_pendulum.plotters import (
 from exps.inverted_pendulum.util import get_mbmpo_parser
 from exps.util import train_and_evaluate
 
-PLAN_HORIZON, SIM_TRAJECTORIES = 0, 8
+PLAN_HORIZON, SIM_TRAJECTORIES = 8, 16
 
 parser = get_mbmpo_parser()
 parser.description = "Run Swing-up Inverted Pendulum using Model-Based MPO."
