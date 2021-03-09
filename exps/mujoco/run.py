@@ -16,8 +16,10 @@ from hucrl.model.hallucinated_model import HallucinatedModel
 def main(args):
     """Run experiment."""
     set_random_seed(args.seed)
+    env_config = parse_config_file(args.env_config_file)
+
     environment = GymEnvironment(
-        args.environment, ctrl_cost_weight=args.action_cost, seed=args.seed
+        env_config["name"], ctrl_cost_weight=env_config["action_cost"], seed=args.seed
     )
     reward_model = environment.env.reward_model()
     if args.exploration == "optimistic":
@@ -25,7 +27,7 @@ def main(args):
         environment.add_wrapper(HallucinationWrapper)
     else:
         dynamical_model = TransformedModel.default(environment)
-    kwargs = parse_config_file(args.config_file)
+    kwargs = parse_config_file(args.agent_config_file)
 
     agent = getattr(
         importlib.import_module("rllib.agent"), f"{args.agent}Agent"
@@ -39,7 +41,7 @@ def main(args):
     train_agent(
         agent=agent,
         environment=environment,
-        max_steps=args.max_steps,
+        max_steps=env_config["max_steps"],
         num_episodes=args.train_episodes,
         render=args.render,
         print_frequency=1,
@@ -48,8 +50,8 @@ def main(args):
     evaluate_agent(
         agent=agent,
         environment=environment,
+        max_steps=env_config["max_steps"],
         num_episodes=args.test_episodes,
-        max_steps=args.max_steps,
     )
 
 
@@ -61,7 +63,10 @@ if __name__ == "__main__":
         default="BPTT",
         choices=["BPTT", "MVE", "DataAugmentation", "MPC", "MBMPO"],
     )
-    parser.add_argument("--environment", type=str, default="MBHalfCheetah-v0")
+    parser.add_argument("--agent-config-file", type=str, default="config/bptt.yaml")
+    parser.add_argument(
+        "--env-config-file", type=str, default="config/envs/half-cheetah.yaml"
+    )
 
     parser.add_argument(
         "--exploration",
@@ -72,8 +77,6 @@ if __name__ == "__main__":
     parser.add_argument("--config-file", type=str, default="config/bptt.yaml")
 
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--max-steps", type=int, default=1000)
-    parser.add_argument("--action-cost", type=float, default=0.1)
     parser.add_argument("--train-episodes", type=int, default=250)
     parser.add_argument("--test-episodes", type=int, default=1)
     parser.add_argument("--num-threads", type=int, default=1)

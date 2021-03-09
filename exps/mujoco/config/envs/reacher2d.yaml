@@ -1,0 +1,3 @@
+name: MBReacher2d-v0
+max_steps: 150
+action_cost: 0.001
