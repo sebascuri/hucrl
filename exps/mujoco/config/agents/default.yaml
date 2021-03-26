@@ -1,0 +1,4 @@
+# Config file for default parameters.
+model_learn_exploration_episodes: 5
+exploration_episodes: 5
+calibrate: False

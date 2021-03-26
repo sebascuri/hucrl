@@ -1,6 +1,8 @@
-# Config file for (H)-DA algorithm.
+# Config file for MPC algorithm.
 horizon: 50
 num_samples: 500
-mpc_solver_name: MPPIShooting
-model_learn_exploration_episodes: 5
-exploration_episodes: 5
+#mpc_solver_name: MPPIShooting
+mpc_solver_name: CEMShooting
+model_learn_exploration_episodes: 0
+exploration_episodes: 1
+calibrate: False

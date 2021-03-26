@@ -74,7 +74,6 @@ if __name__ == "__main__":
         default="optimistic",
         choices=["optimistic", "expected", "thompson"],
     )
-    parser.add_argument("--config-file", type=str, default="config/bptt.yaml")
 
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--train-episodes", type=int, default=250)

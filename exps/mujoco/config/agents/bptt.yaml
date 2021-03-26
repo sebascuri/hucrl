@@ -1,7 +1,7 @@
 # Config file for (H)-BPTT algorithm.
 num_steps: 3
 num_samples: 2
-num_iter: 2
+num_iter: 1
 train_frequency: 1
 num_rollouts: 0
 lambda: 0.1  # entropy regularization coefficient.
