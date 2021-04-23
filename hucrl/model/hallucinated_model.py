@@ -58,6 +58,18 @@ class HallucinatedModel(TransformedModel):
         return scale
 
     @classmethod
+    def from_transformed_model(
+        cls, transformed_model, beta=1.0, hallucinate_rewards=False
+    ):
+        """Initialize a hallucinated model from a transformed model."""
+        return cls.__init__(
+            base_model=transformed_model.base_model,
+            transformations=transformed_model.transformations,
+            beta=beta,
+            hallucinate_rewards=hallucinate_rewards,
+        )
+
+    @classmethod
     def default(
         cls,
         environment,
