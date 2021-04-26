@@ -11,7 +11,8 @@ T = TypeVar("T", bound="HallucinatedModel")
 class HallucinatedModel(TransformedModel):
     """Optimistic Model returns a Delta at the optimistic next state."""
 
-    _true_dim_action: Tuple
+    a_dim_action: Tuple
+    h_dim_action: Tuple
     beta: float
     def __init__(
         self,

@@ -16,16 +16,18 @@ class HallucinatedModel(TransformedModel):
         self, base_model, transformations, beta=1.0, hallucinate_rewards=False
     ):
         super().__init__(base_model, transformations)
-        self._true_dim_action = base_model.dim_action
+        self.a_dim_action = base_model.dim_action
         if hallucinate_rewards:
             self.dim_action = (self.dim_action[0] + self.dim_state[0] + 1,)
+            self.h_dim_action = (self.dim_state[0] + 1,)
         else:
             self.dim_action = (self.dim_action[0] + self.dim_state[0],)
+            self.h_dim_action = self.dim_state
         self.beta = beta
 
     def forward(self, state, action, next_state=None):
         """Get Optimistic Next state."""
-        dim_action, dim_state = self._true_dim_action[0], self.dim_state[0]
+        dim_action, dim_state = self.a_dim_action[0], self.dim_state[0]
         control_action = action[..., :dim_action]
 
         if self.model_kind == "dynamics":
@@ -52,7 +54,7 @@ class HallucinatedModel(TransformedModel):
 
     def scale(self, state, action):
         """Get scale at current state-action pair."""
-        control_action = action[..., : self._true_dim_action[0]]
+        control_action = action[..., : self.a_dim_action[0]]
         scale = super().scale(state, control_action)
 
         return scale
