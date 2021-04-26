@@ -62,7 +62,7 @@ class HallucinatedModel(TransformedModel):
         cls, transformed_model, beta=1.0, hallucinate_rewards=False
     ):
         """Initialize a hallucinated model from a transformed model."""
-        return cls.__init__(
+        return cls(
             base_model=transformed_model.base_model,
             transformations=transformed_model.transformations,
             beta=beta,
