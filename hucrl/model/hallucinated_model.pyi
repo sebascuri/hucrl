@@ -1,4 +1,4 @@
-from typing import Any, List, Tuple, Union, Type, TypeVar
+from typing import Any, List, Tuple, Type, TypeVar, Union
 
 import torch.nn as nn
 from rllib.dataset.datatypes import TupleDistribution

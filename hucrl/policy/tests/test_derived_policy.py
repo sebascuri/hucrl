@@ -2,7 +2,7 @@ import pytest
 import torch
 from rllib.policy import DerivedPolicy, NNPolicy
 from rllib.util.distributions import Delta
-from rllib.util.neural_networks import random_tensor
+from rllib.util.neural_networks.utilities import random_tensor
 from rllib.util.utilities import tensor_to_distribution
 from torch.distributions import MultivariateNormal
 
