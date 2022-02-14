@@ -27,7 +27,7 @@ NUM_ELITES = 5
 KAPPA = 1.0
 BETAS = [0.2, 0.8, 0]
 
-memory = ExperienceReplay(max_len=2000, num_steps=1)
+memory = ExperienceReplay(max_len=2000, num_memory_steps=1)
 
 value_function = None
 
